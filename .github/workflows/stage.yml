@@ -1,47 +1,17 @@
-name: Staging deployment
+name: Sync Space
+on: push
 
-on:
-  push:
-    tags:
-    - stage-*
-
-jobs: 
-  build:
-   
-    runs-on: ubuntu-latest
-   
-    steps:
-      - name: Checkout files    
-        uses: actions/checkout@v2
-
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: mvkaran/openmct
-          tag_with_ref: true
-          tag_with_sha: true
-        
+jobs:
   deploy:
-    needs: build
-    
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout files    
-        uses: actions/checkout@v2
-        
-      - name: Get tag name
-        uses: olegtarasov/get-tag@v2
-        
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-         
-      - name: Provision Droplet and deploy container
-        run: doctl compute droplet create "$GIT_TAG_NAME" --image docker-18-04 --size s-1vcpu-1gb --region nyc1 --user-data-file deploy.sh --wait
-
-
-    
+    - uses: actions/checkout@master
+    - uses: idlefingers/do-space-sync-action@master
+      with:
+        args: --acl public-read
+      env:
+        SOURCE_DIR: './opt/mayday-site'
+        SPACE_NAME: "mayday-site-github"
+        SPACE_REGION: "NYC1"
+        SPACE_ACCESS_KEY_ID: ${{ secrets.SSHKEY }}
+        SPACE_SECRET_ACCESS_KEY: "digitalocean"
